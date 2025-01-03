@@ -1,15 +1,25 @@
-package broker
+package main
 
-import "simple-rabbit/internal/broker"
+import (
+	"fmt"
+	"simple-rabbit/internal/broker"
+)
 
 func main() {
 	b := broker.NewBroker()
 
-	b.CreateQueue("test-queue")
+	// create queue
+	b.CreateQueue("order")
 
-	b.SendMessage("test-queue", "hello world")
-	b.SendMessage("test-queue", "this is a test message")
+	//create exchange
+	b.CreateExchange("main_exchange")
 
-	b.ReceiveMessage("test-queue")
-	b.ReceiveMessage("test-queue")
+	//bind queue
+	b.BindQueue("main_exchange", "order.created", "order")
+
+	//send message
+	b.SendMessage("main_exchange", "order.created", "new order created !")
+
+	message := b.ReceiveMessage("order")
+	fmt.Printf("Receive message from queue order: %s\n", message)
 }

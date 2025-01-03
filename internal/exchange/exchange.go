@@ -25,12 +25,12 @@ func (e *Exchange) BindToQueue(routingKey string, q *queue.Queue) {
 	fmt.Printf("queue bounde to Exchange %s with routing key  %s\n", e.Name, routingKey)
 }
 
-func (e *Exchange) PublishMessage(msg, routingKey string) {
+// PublishMessage publish a message with a routing key to the bounded queue
+func (e *Exchange) PublishMessage(routingKey, message string) {
 	if q, exists := e.QueueMap[routingKey]; exists {
-		q.Enqueue(msg)
+		q.Enqueue(message)
 		fmt.Printf("queue bounde to Exchange %s with routing key  %s\n", e.Name, routingKey)
 	} else {
 		fmt.Printf("no queue bounde to routing key: %s ", routingKey)
 	}
-
 }

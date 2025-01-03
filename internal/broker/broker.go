@@ -2,19 +2,23 @@ package broker
 
 import (
 	"fmt"
+	"simple-rabbit/internal/exchange"
 	"simple-rabbit/internal/queue"
 )
 
 type Broker struct {
-	queues map[string]*queue.Queue
+	queues    map[string]*queue.Queue
+	exchanges map[string]*exchange.Exchange
 }
 
 func NewBroker() *Broker {
 	return &Broker{
-		queues: make(map[string]*queue.Queue),
+		queues:    make(map[string]*queue.Queue),
+		exchanges: make(map[string]*exchange.Exchange),
 	}
 }
 
+// CreateQueue create queue
 func (b *Broker) CreateQueue(name string) {
 	if _, ok := b.queues[name]; ok {
 		fmt.Printf("Queue %s already exists", name)
@@ -25,25 +29,58 @@ func (b *Broker) CreateQueue(name string) {
 	fmt.Printf("Queue %s created", name)
 }
 
-func (b *Broker) SendMessage(queueName, message string) {
-	if q, ok := b.queues[queueName]; ok {
-		q.Enqueue(message)
-		fmt.Printf("Message sent to queue %s", queueName)
+// SendMessage send message to queue
+func (b *Broker) SendMessage(exChange, routingKey, message string) {
+	ex, ok := b.exchanges[exChange]
+	if !ok {
+		fmt.Printf("Exchange %s not found", exChange)
 		return
 	}
 
-	fmt.Printf("Queue %s not found", queueName)
+	ex.PublishMessage(routingKey, message)
 
 }
 
-func (b *Broker) ReceiveMessage(queueName string) {
+// ReceiveMessage receive message
+func (b *Broker) ReceiveMessage(queueName string) any {
 	if q, ok := b.queues[queueName]; ok {
 		if message, ok := q.Dequeue(); ok {
 			fmt.Printf("Message Received from queue:%s message:%s", queueName, message)
+			return message
 		} else {
 			fmt.Printf("Queue %s not found", queueName)
 		}
 	} else {
 		fmt.Printf("Queue %s not found", queueName)
 	}
+
+	return nil
+}
+
+// CreateExchange create exchange
+func (b *Broker) CreateExchange(name string) {
+	if _, ok := b.exchanges[name]; ok {
+		fmt.Printf("Exchange %s already exists", name)
+		return
+	}
+
+	b.exchanges[name] = exchange.NewExchange(name)
+	fmt.Printf("Exchange %s created", name)
+}
+
+// BindQueue bind queue to routing key
+func (b *Broker) BindQueue(exchange, routingKey, queueName string) {
+	ex, exist := b.exchanges[exchange]
+	if !exist {
+		fmt.Printf("Exchange %s not found", exchange)
+		return
+	}
+
+	q, exist := b.queues[queueName]
+	if !exist {
+		fmt.Printf("Queue %s not found", queueName)
+		return
+	}
+
+	ex.BindToQueue(routingKey, q)
 }
