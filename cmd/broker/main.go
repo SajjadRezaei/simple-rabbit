@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	b := broker.NewBroker()
+	b := broker.NewBroker("broker.db")
 
 	// create queue
 	b.CreateQueue("order")
@@ -19,6 +19,10 @@ func main() {
 
 	//send message
 	b.SendMessage("main_exchange", "order.created", "new order created !")
+
+	// verify persist message
+	b = broker.NewBroker("broker.db")
+	b.ReceiveMessage("main_exchange")
 
 	message := b.ReceiveMessage("order")
 	fmt.Printf("Receive message from queue order: %s\n", message)

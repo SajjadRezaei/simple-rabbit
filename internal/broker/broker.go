@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"simple-rabbit/internal/exchange"
 	"simple-rabbit/internal/queue"
+	"simple-rabbit/internal/storage"
 )
 
 type Broker struct {
 	queues    map[string]*queue.Queue
 	exchanges map[string]*exchange.Exchange
+	storage   *storage.Storage
 }
 
-func NewBroker() *Broker {
+func NewBroker(storagePath string) *Broker {
 	return &Broker{
 		queues:    make(map[string]*queue.Queue),
 		exchanges: make(map[string]*exchange.Exchange),
+		storage:   storage.NewStorage(storagePath),
 	}
 }
 
@@ -25,7 +28,7 @@ func (b *Broker) CreateQueue(name string) {
 		return
 	}
 
-	b.queues[name] = queue.NewQueue()
+	b.queues[name] = queue.NewQueue(name, b.storage)
 	fmt.Printf("Queue %s created", name)
 }
 
