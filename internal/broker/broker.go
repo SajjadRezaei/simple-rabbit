@@ -2,6 +2,7 @@ package broker
 
 import (
 	"fmt"
+	"simple-rabbit/internal/entities"
 	"simple-rabbit/internal/exchange"
 	"simple-rabbit/internal/queue"
 	"simple-rabbit/internal/storage"
@@ -33,7 +34,7 @@ func (b *Broker) CreateQueue(name string) {
 }
 
 // SendMessage send message to queue
-func (b *Broker) SendMessage(exChange, routingKey, message string) {
+func (b *Broker) SendMessage(exChange, routingKey string, message entities.Message) {
 	ex, ok := b.exchanges[exChange]
 	if !ok {
 		fmt.Printf("Exchange %s not found", exChange)
@@ -51,7 +52,7 @@ func (b *Broker) ReceiveMessage(queueName string) any {
 			fmt.Printf("Message Received from queue:%s message:%s", queueName, message)
 			return message
 		} else {
-			fmt.Printf("Queue %s not found", queueName)
+			fmt.Printf("can not receive message from queue:%s", queueName)
 		}
 	} else {
 		fmt.Printf("Queue %s not found", queueName)

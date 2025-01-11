@@ -2,6 +2,7 @@ package exchange
 
 import (
 	"fmt"
+	"simple-rabbit/internal/entities"
 	"simple-rabbit/internal/queue"
 )
 
@@ -26,7 +27,7 @@ func (e *Exchange) BindToQueue(routingKey string, q *queue.Queue) {
 }
 
 // PublishMessage publish a message with a routing key to the bounded queue
-func (e *Exchange) PublishMessage(routingKey, message string) {
+func (e *Exchange) PublishMessage(routingKey string, message entities.Message) {
 	if q, exists := e.QueueMap[routingKey]; exists {
 		q.Enqueue(message)
 		fmt.Printf("queue bounde to Exchange %s with routing key  %s\n", e.Name, routingKey)

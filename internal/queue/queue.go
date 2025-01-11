@@ -1,12 +1,14 @@
 package queue
 
 import (
+	"simple-rabbit/internal/entities"
 	"simple-rabbit/internal/storage"
 	"sync"
+	"time"
 )
 
 type Queue struct {
-	messages []string
+	messages []entities.Message
 	mutex    sync.Mutex
 	storage  *storage.Storage
 	name     string
@@ -15,13 +17,16 @@ type Queue struct {
 // NewQueue create a new Queue
 func NewQueue(name string, storage *storage.Storage) *Queue {
 	q := &Queue{
-		messages: make([]string, 0),
+		messages: make([]entities.Message, 0),
 		name:     name,
 		storage:  storage,
 	}
 
-	if storage == nil {
-		storedMessage, _ := storage.LoadMessage(name)
+	if storage != nil {
+		storedMessage, err := storage.LoadMessages(name)
+		if err != nil {
+			panic(err)
+		}
 		q.messages = append(q.messages, storedMessage...)
 	}
 
@@ -29,29 +34,52 @@ func NewQueue(name string, storage *storage.Storage) *Queue {
 }
 
 // Enqueue adds message to the queue
-func (q *Queue) Enqueue(msg string) {
+func (q *Queue) Enqueue(msg entities.Message) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
+	//expiration := time.Now().Add(ttl)
+
 	q.messages = append(q.messages, msg)
-	if q.storage == nil {
+	if q.storage != nil {
 		_ = q.storage.SaveMessage(q.name, msg)
 	}
 }
 
 // Dequeue remove and return first element in queue
-func (q *Queue) Dequeue() (string, bool) {
+func (q *Queue) Dequeue() (*entities.Message, bool) {
 	q.mutex.Lock()
 	defer q.mutex.Unlock()
 
 	if len(q.messages) == 0 {
-		return "", false
+		return nil, false
 	}
 
-	msg := q.messages[0]
-	q.messages = q.messages[1:]
+	for i, msg := range q.messages {
+		// Check if the message has expired
+		if msg.Expiration != nil && msg.Expiration.Before(time.Now()) {
+			// Skip expired messages
+			if msg.Key != nil {
+				q.storage.DeleteMessage(q.name, msg.Key)
+			}
 
-	return msg, true
+			continue
+		}
+
+		// Remove the message from the queue
+		q.messages = append(q.messages[:i], q.messages[i+1:]...)
+
+		// Delete the message from storage if it has a key
+		if msg.Key != nil {
+			q.storage.DeleteMessage(q.name, msg.Key)
+		}
+
+		// Return the valid message
+		return &msg, true
+
+	}
+
+	return nil, false
 }
 
 // Length return the number of message in the queue
